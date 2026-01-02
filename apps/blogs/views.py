@@ -17,7 +17,7 @@ class PostsListCreateView(generics.ListCreateAPIView):
     
 
     def get_queryset(self):
-        qs = super().get_queryset().filter(author=self.request.user)
+        qs = super().get_queryset().select_related("author")
         status = self.request.query_params.get('status')
         category = self.request.query_params.get('category')
         if status == 'draft':
@@ -74,6 +74,10 @@ class PostCommentsListCreateView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
     queryset = Comment.objects.all()
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        post_id = self.kwargs["id"]
+        return super().get_queryset().filter(post_id=post_id)
 
     def perform_create(self, serializer):
         post_id = self.kwargs["id"]
