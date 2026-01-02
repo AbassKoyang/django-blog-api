@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Post
+from .models import Category, Comment, Post
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -9,6 +9,12 @@ class PostSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
         return super().create(validated_data)
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['id', 'post', 'user', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['post', 'user', 'created_at', 'updated_at']
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

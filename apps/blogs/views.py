@@ -3,13 +3,13 @@ from rest_framework import generics, filters, permissions
 
 from .permissions import IsOwner
 
-from .serializers import PostSerializer, CategorySerializer
+from .serializers import CommentSerializer, PostSerializer, CategorySerializer
 
-from .models import Post, Category
-# Create your views here.
+from .models import Post, Category, Comment
+# Create your views here
 
 class PostsListCreateView(generics.ListCreateAPIView):
-    queryset = Post.objects.all()
+    queryset = Post.objects.active()
     serializer_class = PostSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'content']
@@ -23,19 +23,13 @@ class PostsListCreateView(generics.ListCreateAPIView):
             content = title
         serializer.save(author=self.request.user, content=content)
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-        if not user.is_authenticated:
-            return Post.objects.none()
-        return qs
-
 class PostsUpdateView(generics.UpdateAPIView):
     queryset= Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsOwner]
 
     lookup_field = 'pk'
+    lookup_url_kwarg='id'
 
     def perform_update(self, serializer):
         instance = serializer.save();
@@ -48,6 +42,7 @@ class PostDeleteView(generics.DestroyAPIView):
     serializer_class = PostSerializer
     permission_classes = [IsOwner]
     lookup_field = 'pk'
+    lookup_url_kwarg='id'
 
     def perform_destroy(self, serializer):
         instance = serializer.save();
@@ -59,7 +54,20 @@ class PostRetrieveView(generics.RetrieveAPIView):
     serializer_class = PostSerializer
     permission_classes = [IsOwner]
     lookup_field = 'pk'
+    lookup_url_kwarg='id'
 
+
+class PostCommentsListCreateView(generics.ListCreateAPIView):
+    serializer_class = CommentSerializer
+    queryset = Comment.objects.all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        post_id = self.kwargs["id"]
+        post = generics.get_object_or_404(Post, pk=post_id)
+        serializer.save(post=post, user=self.request.user)
+
+        
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

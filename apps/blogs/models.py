@@ -28,6 +28,23 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+class PostQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_deleted=False)
+    def is_draft(self):
+        return self.active().filter(status='draft')
+    def is_published(self):
+        return self.active().filter(status='published')
+
+class PostManager(models.Manager):
+    def get_queryset(self):
+        return PostQuerySet(self.model, using=self._db)
+    def active(self):
+        return self.get_queryset().active()
+    def is_draft(self):
+        return self.get_queryset().is_draft()
+    def is_published(self):
+        return self.get_queryset().is_published()
 
 class Post(models.Model):
     DRAFT = 'draft'
@@ -47,6 +64,8 @@ class Post(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = PostManager()
 
     class Meta:
         ordering = ['-created_at']
