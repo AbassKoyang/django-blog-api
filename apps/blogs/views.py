@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics, filters, permissions
 
-from .permissions import IsOwner
+from .permissions import IsCommentOwner, IsOwner
 
 from .serializers import CommentSerializer, PostSerializer, CategorySerializer
 
@@ -14,6 +14,19 @@ class PostsListCreateView(generics.ListCreateAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'content']
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+
+    def get_queryset(self):
+        qs = super().get_queryset().filter(author=self.request.user)
+        status = self.request.query_params.get('status')
+        category = self.request.query_params.get('category')
+        if status == 'draft':
+            qs = qs.is_draft()
+        elif status  == 'published':
+            qs = qs.is_published()
+        if category:
+            qs = qs.filter(post__category=category)
+        return qs
 
     def perform_create(self, serializer):
         print(serializer.validated_data)
@@ -67,7 +80,28 @@ class PostCommentsListCreateView(generics.ListCreateAPIView):
         post = generics.get_object_or_404(Post, pk=post_id)
         serializer.save(post=post, user=self.request.user)
 
-        
+class RetrieveCommentView(generics.RetrieveAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    lookup_field = 'pk'
+    lookup_url_kwarg = 'id'
+
+class UpdateCommentView(generics.UpdateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsCommentOwner]
+    lookup_field = 'pk'
+    lookup_url_kwarg = 'id'
+
+class DeleteCommentView(generics.DestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsCommentOwner]
+    lookup_field = 'pk'
+    lookup_url_kwarg = 'id'
+
+    
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

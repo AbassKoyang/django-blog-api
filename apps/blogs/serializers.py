@@ -5,7 +5,8 @@ from .models import Category, Comment, Post
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ['id', 'content', 'title', 'tags', 'category', 'slug', 'status', 'created_at', 'updated_at' ]
+        fields = ['id', 'content', 'title', 'author', 'tags', 'category', 'slug', 'status', 'created_at', 'updated_at' ]
+        read_only_fields = ['author']
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
         return super().create(validated_data)
